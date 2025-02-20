@@ -1,0 +1,48 @@
+---
+description: 
+globs: 
+---
+# .cursor/rules/000-cursor-rules.mdc
+version: 1.0.0
+name: Core Audit Rules
+description: Core rules for automated code audit workflow
+globs: ["*"]
+metadata:
+  author: "Security Team"
+  category: "Security"
+  priority: "High"
+
+<workflow>
+This is the core rule file that defines the basic structure and behavior of the automated code audit system.
+All other rules should follow these conventions:
+
+1. Version Control
+- Use semantic versioning (MAJOR.MINOR.PATCH)
+- Document all changes in CHANGELOG.md
+
+2. File Organization
+- Place all rules in .cursor/rules/
+- Use consistent naming convention: {number}-{category}-{purpose}.mdc
+- Numbers: 000-099 for core rules
+         100-199 for environment rules
+         200-299 for security rules
+         300-399 for quality rules
+         900-999 for workflow rules
+
+3. Rule Structure
+- Must have version and description
+- Must specify globs for file matching
+- Should include metadata
+- Should specify triggers if automated
+
+4. Automation Triggers
+- on_file_open: Run when a file is opened
+- on_file_save: Run when a file is saved
+- on_project_open: Run when project is opened
+- on_scan_complete: Run after scan completion
+
+5. Documentation
+- Each rule must be well documented
+- Include examples where applicable
+- Specify dependencies if any
+</workflow>

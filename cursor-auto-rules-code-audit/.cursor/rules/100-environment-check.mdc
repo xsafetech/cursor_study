@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+---
+# .cursor/rules/100-environment-check.mdc
+version: 1.0.0
+name: Environment Check
+description: Automated environment verification for security tools and dependencies
+globs: ["*"]
+triggers: ["on_project_open"]
+
+<workflow>
+Environment check workflow ensures all required tools and configurations are present:
+
+1. Required Tools
+- Semgrep
+- SonarQube Scanner
+- Git
+- Docker
+
+2. Language Support
+- Java
+- Python
+- JavaScript/TypeScript
+- PHP
+- Go
+- Rust
+
+3. Security Tools
+- OWASP Dependency Check
+- Snyk (if available)
+- Trivy
+
+4. Verification Steps
+- Check tool versions
+- Verify configurations
+- Validate permissions
+- Test tool connectivity
+</workflow>

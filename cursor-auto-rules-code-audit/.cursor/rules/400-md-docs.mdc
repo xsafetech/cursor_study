@@ -1,0 +1,178 @@
+---
+description: 
+globs: 
+---
+---
+description: Use when creating or modifying any security audit-related Markdown documentation to ensure consistency and completeness
+globs: "**/*.md"
+tags: [documentation, security, audit]
+priority: 2
+version: 1.0.0
+---
+# Markdown Documentation Standard
+
+<version>1.0.0</version>
+
+## Requirements
+
+- Follow standardized document structure
+- Include all required sections
+- Maintain proper documentation hierarchy
+- Use consistent formatting
+
+## Document Structure
+
+### Common Sections
+
+#### 1. Title and Metadata
+- Title format: "{Document Type} - {Project Name}"
+- Status: [Draft/Review/Approved]
+- Version: Follow semantic versioning
+- Author: Responsible party
+- Date: Last updated
+
+#### 2. Summary
+- Document purpose
+- Key points
+- Expected outcomes
+- Related dependencies
+
+#### 3. Body Structure
+- Clear section divisions
+- Logical hierarchy
+- Emphasis markers
+- Code examples
+
+#### 4. Security Considerations
+- Sensitive information handling
+- Access control
+- Data classification
+- Confidentiality requirements
+
+### Specific Document Types
+
+#### Audit Scope Document
+- Project overview
+- Technology stack
+- Audit objectives
+- Timeline
+- Resource requirements
+
+#### Architecture Audit Document
+- System architecture
+- Component relationships
+- Security boundaries
+- Trust relationships
+- Data flows
+
+#### Vulnerability Report
+- Vulnerability description
+- Technical details
+- Impact assessment
+- Remediation guidance
+- Verification methods
+
+## Format Specifications
+
+### Markdown Syntax
+```markdown
+# First Level Heading
+## Second Level Heading
+### Third Level Heading
+
+- Unordered list item
+1. Ordered list item
+
+**Important content**
+*Italic emphasis*
+`Code snippet`
+
+```language
+Code block
+```
+
+> Quote or note
+```
+
+### Code Example Format
+- Use language-specific syntax highlighting
+- Add necessary comments
+- Highlight key lines
+- Provide context
+
+### Security Sensitive Information
+- Use placeholders for sensitive data
+- Clearly mark confidentiality levels
+- Follow minimum exposure principle
+- Version control considerations
+
+## Example
+
+<example>
+# Security Audit Report - Authentication System
+
+## Metadata
+- Status: Approved
+- Version: 1.2.0
+- Author: Security Team
+- Date: 2024-02-20
+
+## Summary
+This document details the security audit findings for the authentication system, including vulnerabilities discovered, risk assessment, and remediation recommendations.
+
+## Findings
+### High Risk Vulnerability
+1. JWT Signature Verification Bypass
+   ```java
+   // Insecure implementation
+   public boolean validateToken(String token) {
+       try {
+           // Missing algorithm verification
+           Jwts.parser().setSigningKey(secret).parseClaimsJws(token);
+           return true;
+       } catch (JwtException e) {
+           return false;
+       }
+   }
+   ```
+
+### Remediation
+```java
+// Secure implementation
+public boolean validateToken(String token) {
+    try {
+        Jwts.parser()
+            .setSigningKey(secret)
+            .requireSignatureAlgorithm(SignatureAlgorithm.HS256)
+            .parseClaimsJws(token);
+        return true;
+    } catch (JwtException e) {
+        return false;
+    }
+}
+```
+</example>
+
+<example type="invalid">
+Vulnerability Report
+Found a JWT bug
+Code has issues
+Need to fix
+</example>
+
+## Documentation Checklist
+
+- [ ] Document structure complete
+- [ ] Format follows standards
+- [ ] Sensitive information properly handled
+- [ ] Code examples clear
+- [ ] Version information correct
+- [ ] Security level marked
+- [ ] Reviewer confirmed
+
+<critical>
+- All documentation must pass security review
+- Sensitive information must be properly handled
+- Maintain document version control
+- Ensure documentation timeliness
+</critical>

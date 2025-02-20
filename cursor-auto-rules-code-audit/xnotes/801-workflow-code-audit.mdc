@@ -1,0 +1,174 @@
+---
+description: 
+globs: 
+---
+# Security Audit Workflow
+Version: 1.0.0
+Name: Security Audit Workflow
+Description: Defines the complete security audit workflow and process automation
+Globs: ["*"]
+Triggers: ["on_project_open", "on_file_change"]
+Metadata:
+  Author: "Security Team"
+  Category: "Workflow"
+  Priority: "High"
+
+<workflow>
+This rule defines the complete security audit workflow process:
+
+1. Initialization Phase
+   - Environment verification (100-environment-check.mdc)
+   - Project structure validation
+   - Security tool availability check
+   - Configuration validation
+
+2. Static Analysis Phase
+   - Code pattern matching
+   - Security rule validation
+   - Quality metrics collection
+   - Dependency analysis
+
+3. Dynamic Analysis Phase
+   - API security testing
+   - Authentication flow validation
+   - Authorization check
+   - Input validation testing
+
+4. Reporting Phase
+   - Vulnerability aggregation
+   - Risk assessment
+   - Report generation
+   - Notification dispatch
+
+5. Integration Points
+   - Issue tracker integration
+   - CI/CD pipeline hooks
+   - Team notification system
+   - Security dashboard updates
+
+<automation>
+Automation workflow sequence:
+
+1. Project Open Trigger:
+   ```sequence
+   Cursor->Environment: Check (100-environment-check.mdc)
+   Environment->Tools: Verify security tools
+   Tools->Config: Validate configurations
+   Config->Workflow: Initialize audit process
+   Workflow->Report: Generate initial status
+   ```
+
+2. File Change Trigger:
+   ```sequence
+   File->Static: Run static analysis
+   Static->Dynamic: Trigger dynamic checks
+   Dynamic->Rules: Apply security rules
+   Rules->Report: Update findings
+   Report->Notify: Send notifications
+   ```
+
+3. Periodic Checks:
+   ```sequence
+   Timer->Deps: Check dependencies
+   Deps->Security: Verify security patches
+   Security->Config: Validate settings
+   Config->Report: Update status
+   ```
+</automation>
+
+<rules>
+1. Tool Integration Rules:
+   - Semgrep must be configured with custom rules
+   - SonarQube scanner must be available
+   - OWASP dependency check must be enabled
+   - Custom security tools must be registered
+
+2. Process Rules:
+   - All security checks must be automated
+   - Reports must be generated after each scan
+   - Findings must be categorized by severity
+   - Each issue must have remediation guidance
+
+3. Notification Rules:
+   - Critical issues require immediate notification
+   - Weekly summary reports must be generated
+   - Team leads must be notified of new findings
+   - Compliance status must be updated regularly
+
+4. Documentation Rules:
+   - All findings must be documented
+   - Evidence must be collected and stored
+   - Audit trail must be maintained
+   - Remediation steps must be tracked
+</rules>
+
+<templates>
+Templates are located in .cursor/rules/templates/:
+- scope-template.md: Project scope definition
+- arch-template.md: System architecture documentation
+- audit-template.md: Audit task documentation
+- vuln-template.md: Vulnerability reporting
+
+Template Usage Rules:
+1. Scope Document
+   - Must be approved before audit starts
+   - Must define clear boundaries
+   - Must list all domains
+   - Must specify priorities
+
+2. Architecture Document
+   - Must include system diagram
+   - Must define trust boundaries
+   - Must document security controls
+   - Must track changes
+
+3. Audit Tasks
+   - Must be linked to a domain
+   - Must follow checklist
+   - Must include evidence
+   - Must be reviewed
+
+4. Vulnerability Reports
+   - Must include CVSS score
+   - Must have clear PoC
+   - Must suggest fixes
+   - Must be verified
+</templates>
+
+<integrations>
+1. Issue Tracking:
+   - JIRA
+   - GitHub Issues
+   - GitLab Issues
+   - Azure DevOps
+
+2. CI/CD Pipelines:
+   - GitHub Actions
+   - GitLab CI
+   - Jenkins
+   - Azure Pipelines
+
+3. Communication:
+   - Slack
+   - Microsoft Teams
+   - Email
+   - Dashboard
+
+4. Security Tools:
+   - Semgrep
+   - SonarQube
+   - OWASP Dependency Check
+   - Custom security tools
+</integrations>
+
+<compliance>
+This workflow supports:
+- OWASP Top 10
+- CWE Top 25
+- SANS Top 25
+- ISO 27001
+- GDPR
+- HIPAA
+- PCI DSS
+</compliance>
+</workflow>

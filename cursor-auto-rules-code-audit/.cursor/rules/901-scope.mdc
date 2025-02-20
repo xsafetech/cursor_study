@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+---
+# .cursor/rules/901-audit-workflow.mdc
+version: 1.0.0
+name: Automated Audit Workflow
+description: Defines the automated security audit process
+globs: ["*.{java,py,js,ts,php,go,rs}"]
+triggers: ["on_file_open", "on_file_save"]
+
+<workflow>
+The automated security audit workflow follows these steps:
+
+1. Initial Scan
+- Environment verification
+- Dependency check
+- Configuration review
+
+2. Code Analysis
+- Static code analysis (Semgrep)
+- Quality checks (SonarQube)
+- Security scanning
+
+3. Vulnerability Assessment
+- Pattern matching
+- Known vulnerability check
+- Configuration validation
+
+4. Report Generation
+- Findings summary
+- Risk assessment
+- Remediation suggestions
+
+5. Notification
+- Issue tracking integration
+- Team notifications
+- Dashboard updates
+</workflow>

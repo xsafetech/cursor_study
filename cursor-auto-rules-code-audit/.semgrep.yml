@@ -1,0 +1,615 @@
+rules:
+  # SQL 注入漏洞检测
+  - id: java-sql-injection-basic
+    patterns:
+      - pattern: |
+          $STMT = $CONN.createStatement();
+          $STMT.execute($SQL);
+      - pattern-not: |
+          $STMT = $CONN.prepareStatement("...");
+    message: "SQL注入风险: 使用了不安全的Statement.execute()方法,建议使用PreparedStatement"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A1:2021 - Injection"
+      references:
+        - "https://owasp.org/www-community/attacks/SQL_Injection"
+    
+  - id: java-sql-injection-prepared
+    patterns:
+      - pattern: |
+          $STMT = $CONN.prepareStatement($SQL);
+      - pattern-not-inside: |
+          String $SQL = "SELECT * FROM ...";
+    message: "SQL注入风险: PreparedStatement使用了动态SQL,应使用参数化查询"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+      owasp: "A1:2021 - Injection"
+  
+  - id: java-sql-injection-mybatis
+    pattern: |
+      @Select($QUERY)
+    message: "SQL注入风险: MyBatis注解中使用了动态SQL"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+
+  # 命令注入漏洞检测
+  - id: java-command-injection-runtime
+    patterns:
+      - pattern: Runtime.getRuntime().exec($CMD)
+      - pattern-not: Runtime.getRuntime().exec("...")
+      - pattern-inside: |
+          $CMD = $INPUT;
+          ...
+          Runtime.getRuntime().exec($CMD);
+    message: "命令注入风险: Runtime.exec()使用了动态命令"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A1:2021 - Injection"
+    
+  - id: java-command-injection-processbuilder
+    patterns:
+      - pattern: new ProcessBuilder($CMD)
+      - pattern-inside: |
+          $CMD = $INPUT;
+          ...
+          new ProcessBuilder($CMD);
+    message: "命令注入风险: ProcessBuilder使用了动态命令"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-78: OS Command Injection"
+
+  # XXE 漏洞检测
+  - id: java-xxe-documentbuilder
+    patterns:
+      - pattern: DocumentBuilderFactory.newInstance()
+      - pattern-not-inside: |
+          $DBF.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+          $DBF.setFeature("http://xml.org/sax/features/external-general-entities", false);
+          $DBF.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+          $DBF.setXIncludeAware(false);
+          $DBF.setExpandEntityReferences(false);
+    message: "XXE漏洞: DocumentBuilderFactory未完全禁用外部实体"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-611: Improper Restriction of XML External Entity Reference"
+      owasp: "A5:2021 - Security Misconfiguration"
+    
+  - id: java-xxe-saxparser
+    patterns:
+      - pattern: SAXParserFactory.newInstance()
+      - pattern-not-inside: |
+          $SPF.setFeature("http://xml.org/sax/features/external-general-entities", false);
+          $SPF.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+          $SPF.setXIncludeAware(false);
+    message: "XXE漏洞: SAXParserFactory未完全禁用外部实体"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-611"
+
+  # 路径遍历漏洞检测
+  - id: java-path-traversal-file
+    patterns:
+      - pattern: new File($PATH + $INPUT)
+      - pattern-not-inside: |
+          $INPUT = $INPUT.replaceAll("\\.\\./", "");
+          ...
+          new File($PATH + $INPUT);
+    message: "路径遍历风险: 文件路径包含未净化的用户输入"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-22: Path Traversal"
+      owasp: "A5:2021 - Security Misconfiguration"
+    
+  - id: java-path-traversal-zip
+    pattern: |
+      new ZipInputStream($INPUT)
+    message: "Zip Slip风险: 解压缩时未验证路径"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-22"
+
+  # 不安全的反序列化
+  - id: java-unsafe-deserialization-objectinput
+    patterns:
+      - pattern: new ObjectInputStream($INPUT)
+      - pattern-not-inside: |
+          class $CLASS implements ObjectInputFilter {
+            ...
+          }
+    message: "不安全的反序列化: 未使用ObjectInputFilter进行过滤"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A8:2021 - Software and Data Integrity Failures"
+    
+  - id: java-unsafe-deserialization-jackson
+    pattern: |
+      @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+    message: "不安全的反序列化: Jackson启用了不安全的类型信息"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-502"
+
+  # XSS 漏洞检测
+  - id: java-xss-direct-write
+    patterns:
+      - pattern: |
+          $RESP.getWriter().print($INPUT)
+      - pattern-not-inside: |
+          $INPUT = StringEscapeUtils.escapeHtml4($INPUT);
+          ...
+          $RESP.getWriter().print($INPUT);
+    message: "XSS风险: 直接输出未转义的用户输入"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-79: Cross-site Scripting"
+      owasp: "A3:2021 - Injection"
+    
+  - id: java-xss-thymeleaf
+    pattern: th:utext="${$INPUT}"
+    message: "XSS风险: Thymeleaf模板使用了不安全的utext"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-79"
+
+  # SSRF 漏洞检测
+  - id: java-ssrf-url
+    patterns:
+      - pattern: new URL($INPUT)
+      - pattern-not-inside: |
+          if (!isWhitelisted($INPUT)) {
+              throw new SecurityException();
+          }
+          ...
+          new URL($INPUT);
+    message: "SSRF风险: URL未经白名单验证"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-918: Server-Side Request Forgery"
+      owasp: "A10:2021 - Server-Side Request Forgery"
+    
+  - id: java-ssrf-http-client
+    patterns:
+      - pattern: HttpClient.newHttpClient()
+      - pattern-inside: |
+          $URL = $INPUT;
+          ...
+          $CLIENT.send($REQUEST, $HANDLER);
+    message: "SSRF风险: HttpClient请求使用了不受信任的URL"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-918"
+
+  # 加密安全
+  - id: java-weak-crypto-algorithm
+    patterns:
+      - pattern-either:
+          - pattern: Cipher.getInstance("DES")
+          - pattern: Cipher.getInstance("RC4")
+          - pattern: Cipher.getInstance("Blowfish")
+          - pattern: Cipher.getInstance("AES/ECB/...")
+    message: "加密风险: 使用了不安全的加密算法或模式"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp: "A2:2021 - Cryptographic Failures"
+    
+  - id: java-weak-key-size
+    patterns:
+      - pattern: KeyPairGenerator.getInstance("RSA")
+      - pattern-inside: |
+          $KPG.initialize($SIZE);
+          ...
+      - pattern-not: |
+          $KPG.initialize(2048);
+    message: "加密风险: RSA密钥长度不足"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-326: Inadequate Encryption Strength"
+
+  # 认证授权
+  - id: java-hardcoded-credentials
+    patterns:
+      - pattern-either:
+          - pattern: |
+              String $PWD = "..."
+          - pattern: |
+              final String $KEY = "..."
+    message: "认证风险: 硬编码的凭证信息"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-798: Use of Hard-coded Credentials"
+      owasp: "A7:2021 - Identification and Authentication Failures"
+    
+  - id: java-jwt-none-algorithm
+    patterns:
+      - pattern: |
+          JWT.require($ALGORITHM)
+      - pattern-not: |
+          Algorithm.HMAC256($SECRET)
+    message: "JWT风险: 未指定或使用了不安全的算法"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-347: Improper Verification of Cryptographic Signature"
+
+  # 会话管理
+  - id: java-session-timeout
+    patterns:
+      - pattern: |
+          @EnableWebSecurity
+          public class $CONFIG extends WebSecurityConfigurerAdapter {
+            ...
+          }
+      - pattern-not-inside: |
+          http.sessionManagement()
+              .maximumSessions(1)
+              .expiredUrl("/login?expired");
+    message: "会话风险: 未配置会话管理和超时策略"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-613: Insufficient Session Expiration"
+      owasp: "A7:2021 - Identification and Authentication Failures"
+    
+  - id: java-csrf-disabled
+    patterns:
+      - pattern: |
+          http.csrf().disable()
+      - pattern-not-inside: |
+          @RestController
+          public class $API {
+            ...
+          }
+    message: "CSRF风险: 非API接口禁用了CSRF保护"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-352: Cross-Site Request Forgery"
+
+  # 错误处理
+  - id: java-catch-throwable
+    pattern: catch (Throwable $E)
+    message: "异常处理风险: 捕获了顶级Throwable异常"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-396: Declaration of Catch for Generic Exception"
+    
+  - id: java-error-exposure
+    patterns:
+      - pattern-either:
+          - pattern: $RESP.sendError(500, $E.getMessage())
+          - pattern: $RESP.sendError(500, $E.toString())
+    message: "信息泄露风险: 向客户端暴露了异常详情"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-209: Information Exposure Through an Error Message"
+
+  # 日志安全
+  - id: java-log-injection
+    patterns:
+      - pattern-either:
+          - pattern: log.info($INPUT)
+          - pattern: log.error($INPUT)
+          - pattern: log.warn($INPUT)
+      - pattern-not-inside: |
+          $INPUT = $INPUT.replaceAll("[\n\r\t]", "_");
+    message: "日志注入风险: 未过滤的用户输入直接写入日志"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-117: Improper Output Neutralization for Logs"
+    
+  - id: java-sensitive-data-logging
+    patterns:
+      - pattern-either:
+          - pattern: log.debug("password: " + $PWD)
+          - pattern: log.debug("token: " + $TOKEN)
+          - pattern: log.debug("key: " + $KEY)
+    message: "敏感信息风险: 日志中包含敏感数据"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-532: Insertion of Sensitive Information into Log File"
+
+  # 文件操作
+  - id: java-file-download
+    patterns:
+      - pattern: |
+          response.setHeader("Content-Disposition", "attachment; filename=" + $NAME)
+      - pattern-not-inside: |
+          $NAME = $NAME.replaceAll("[\\\\/:*?\"<>|]", "_");
+    message: "文件下载风险: 未净化的文件名可能导致头注入"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-73: External Control of File Name or Path"
+    
+  - id: java-unsafe-temp-file
+    pattern: File.createTempFile($PREFIX, $SUFFIX)
+    message: "文件操作风险: 使用了不安全的临时文件创建方式"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-377: Insecure Temporary File"
+
+  # 并发安全
+  - id: java-synchronized-collection
+    patterns:
+      - pattern-either:
+          - pattern: new HashMap<$K, $V>()
+          - pattern: new ArrayList<$T>()
+          - pattern: new HashSet<$T>()
+      - pattern-inside: |
+          @Controller
+          public class $CLASS {
+            private $TYPE $FIELD;
+          }
+    message: "并发风险: Controller中使用了非线程安全的集合类"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization"
+    
+  - id: java-threadlocal-leak
+    pattern: private static ThreadLocal<$T> $VAR
+    message: "内存泄露风险: ThreadLocal变量未在finally中清理"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-404: Improper Resource Shutdown or Release"
+
+  # Spring 安全配置
+  - id: java-spring-actuator
+    patterns:
+      - pattern: |
+          management.endpoints.web.exposure.include=*
+      - pattern-not-inside: |
+          management.endpoints.web.base-path=/private-actuator
+    message: "配置风险: Spring Actuator端点过度暴露"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-732: Incorrect Permission Assignment for Critical Resource"
+    
+  - id: java-spring-security-debug
+    pattern: security.debug=true
+    message: "配置风险: Spring Security调试模式已启用"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-489: Active Debug Code"
+
+  # 文件上传漏洞检测
+  - id: java-file-upload-type
+    patterns:
+      - pattern: |
+          $FILE.getContentType().equals($TYPE)
+      - pattern-not-inside: |
+          if (!ALLOWED_TYPES.contains($FILE.getContentType())) {
+              throw new SecurityException();
+          }
+    message: "文件上传风险: 未严格校验文件类型"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-434: Unrestricted Upload of File with Dangerous Type"
+      owasp: "A1:2021 - Broken Access Control"
+
+  - id: java-file-upload-name
+    patterns:
+      - pattern: |
+          $FILE.getOriginalFilename()
+      - pattern-not-inside: |
+          $NAME = $FILE.getOriginalFilename().replaceAll("[\\\\/:*?\"<>|]", "_");
+    message: "文件上传风险: 未净化文件名"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-73: External Control of File Name or Path"
+      owasp: "A1:2021 - Broken Access Control"
+
+  - id: java-file-upload-size
+    pattern: |
+      @MultipartConfig
+    pattern-not-inside: |
+      @MultipartConfig(maxFileSize = $SIZE, maxRequestSize = $TOTAL_SIZE)
+    message: "文件上传风险: 未限制文件大小"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-400: Uncontrolled Resource Consumption"
+      owasp: "A5:2021 - Security Misconfiguration"
+
+  # 不安全的重定向
+  - id: java-unsafe-redirect
+    patterns:
+      - pattern: |
+          response.sendRedirect($URL)
+      - pattern-not-inside: |
+          if (!isWhitelistedUrl($URL)) {
+              throw new SecurityException();
+          }
+    message: "重定向风险: 未验证重定向URL"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-601: URL Redirection to Untrusted Site"
+      owasp: "A1:2021 - Broken Access Control"
+
+  # 整数溢出
+  - id: java-integer-overflow
+    pattern-either:
+      - pattern: |
+          int $RESULT = $A + $B;
+      - pattern: |
+          int $RESULT = $A * $B;
+    pattern-not-inside: |
+      if ($A > Integer.MAX_VALUE - $B) {
+          throw new ArithmeticException();
+      }
+    message: "整数溢出风险: 未检查整数运算溢出"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-190: Integer Overflow or Wraparound"
+      owasp: "A3:2021 - Injection"
+
+  # 不安全的反射
+  - id: java-unsafe-reflection
+    pattern: |
+      Class.forName($CLASS_NAME)
+    message: "反射风险: 使用了不安全的动态类加载"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-470: Use of Externally-Controlled Input to Select Classes or Code"
+      owasp: "A8:2021 - Software and Data Integrity Failures"
+
+  # HTTP响应拆分
+  - id: java-response-splitting
+    patterns:
+      - pattern: |
+          response.setHeader($NAME, $VALUE)
+      - pattern-not-inside: |
+          $VALUE = $VALUE.replaceAll("[\r\n]", "");
+    message: "HTTP响应拆分风险: 未过滤换行字符"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-113: HTTP Response Splitting"
+      owasp: "A3:2021 - Injection"
+
+  # 不安全的Bean属性绑定
+  - id: java-unsafe-binding
+    pattern: |
+      @ModelAttribute(binding = true)
+    pattern-not-inside: |
+      @BindingWhitelist(fields = {...})
+    message: "属性绑定风险: 未限制可绑定字段"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-915: Improperly Controlled Modification of Dynamically-Determined Object Attributes"
+      owasp: "A8:2021 - Software and Data Integrity Failures"
+
+  # 不安全的XML解析
+  - id: java-unsafe-xml-parsing
+    pattern: |
+      DocumentBuilder $DB = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+    pattern-not-inside: |
+      $DBF.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+    message: "XML解析风险: 未启用安全处理特性"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-827: Improper Control of Document Type Definition"
+      owasp: "A5:2021 - Security Misconfiguration"
+
+  # 不安全的反序列化过滤器
+  - id: java-unsafe-deserialization-filter
+    pattern: |
+      ObjectInputFilter.Config.setSerialFilterFactory($FILTER)
+    pattern-not-inside: |
+      ObjectInputFilter.Config.createFilter("java.*;!*")
+    message: "反序列化风险: 未设置严格的类过滤器"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-502: Deserialization of Untrusted Data"
+      owasp: "A8:2021 - Software and Data Integrity Failures"
+
+  # WebSocket 安全
+  - id: java-websocket-security
+    pattern: |
+      @ServerEndpoint($PATH)
+    pattern-not-inside: |
+      @ServerEndpoint(value = $PATH, configurator = SecurityConfigurator.class)
+    message: "WebSocket风险: 未配置安全验证器"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-306: Missing Authentication for Critical Function"
+      owasp: "A7:2021 - Identification and Authentication Failures"
+
+  # 竞态条件
+  - id: java-race-condition
+    patterns:
+      - pattern: |
+          if ($CONDITION) {
+              $ACTION;
+          }
+      - pattern-not-inside: |
+          synchronized ($LOCK) {
+              if ($CONDITION) {
+                  $ACTION;
+              }
+          }
+    message: "竞态条件风险: 未使用同步机制保护关键操作"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization"
+      owasp: "A1:2021 - Broken Access Control"
+
+  # 缓存投毒
+  - id: java-cache-poisoning
+    pattern: |
+      @Cacheable(key = $KEY)
+    pattern-not-inside: |
+      @Cacheable(key = $KEY, condition = "isValidCacheKey(#p0)")
+    message: "缓存投毒风险: 未验证缓存键的有效性"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-444: Inconsistent Interpretation of HTTP Requests"
+      owasp: "A5:2021 - Security Misconfiguration"
+
+  # 会话固定攻击
+  - id: java-session-fixation
+    pattern: |
+      request.getSession()
+    pattern-not-inside: |
+      request.getSession().invalidate();
+      request.getSession(true);
+    message: "会话固定风险: 未在身份验证后重新生成会话ID"
+    languages: [java]
+    severity: ERROR
+    metadata:
+      cwe: "CWE-384: Session Fixation"
+      owasp: "A7:2021 - Identification and Authentication Failures"
+
+  # 依赖注入漏洞
+  - id: java-unsafe-di
+    pattern: |
+      @Autowired(required = false)
+    message: "依赖注入风险: 使用了不安全的可选注入"
+    languages: [java]
+    severity: WARNING
+    metadata:
+      cwe: "CWE-749: Exposed Dangerous Method or Function"
+      owasp: "A8:2021 - Software and Data Integrity Failures"

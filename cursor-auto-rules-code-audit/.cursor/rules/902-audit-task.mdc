@@ -1,0 +1,35 @@
+---
+description: 
+globs: 
+---
+# .cursor/rules/902-report-automation.mdc
+version: 1.0.0
+name: Report Automation
+description: Automated security report generation and management
+globs: ["*"]
+triggers: ["on_scan_complete"]
+
+<workflow>
+Report automation handles the following:
+
+1. Report Structure
+- Executive Summary
+- Technical Findings
+- Risk Assessment
+- Remediation Steps
+
+2. Integration Points
+- Issue Tracking System
+- CI/CD Pipeline
+- Security Dashboard
+
+3. Notification System
+- Team Alerts
+- Management Reports
+- Compliance Updates
+
+4. Documentation
+- Audit Trail
+- Evidence Collection
+- Compliance Mapping
+</workflow>
