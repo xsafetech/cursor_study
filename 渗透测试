@@ -1,0 +1,377 @@
+# API 黑盒测试规则
+
+## 1. API 监听和记录规则
+
+### 1.1 请求去重规则
+```json
+{
+  "uniqueKey": {
+    "components": [
+      "method",           // 请求方法
+      "baseUrl",          // 基础 URL（不含参数）
+      "parameterNames",   // 参数名列表（排序后）
+      "contentType"       // 内容类型
+    ],
+    "ignore": [
+      "timestamp",        // 时间戳
+      "random",          // 随机值
+      "token",           // 会话令牌
+      "nonce"            // 随机数
+    ]
+  }
+}
+```
+
+### 1.1 请求去重规则
+```json
+{
+  "uniqueKey": {
+    "components": [
+      "method",           // 请求方法
+      "baseUrl",          // 基础 URL（不含参数）
+      "parameterNames",   // 参数名列表（排序后）
+      "contentType"       // 内容类型
+    ],
+    "ignore": [
+      "timestamp",        // 时间戳
+      "random",          // 随机值
+      "token",           // 会话令牌
+      "nonce"            // 随机数
+    ]
+  }
+}
+```
+
+### 1.2 请求过滤规则
+```json
+{
+  "requestFilter": {
+    "excludeExtensions": [
+      ".png", ".jpg", ".jpeg", ".gif", ".ico",  // 图片文件
+      ".css", ".less", ".scss",                 // 样式文件
+      ".js", ".jsx", ".ts", ".tsx",            // 脚本文件
+      ".woff", ".woff2", ".ttf", ".eot",       // 字体文件
+      ".svg", ".webp",                         // 矢量图和新图片格式
+      ".mp3", ".mp4", ".avi", ".mov",         // 媒体文件
+      ".pdf", ".doc", ".docx",                // 文档文件
+      ".map"                                  // Source map 文件
+    ],
+    "excludePaths": [
+      "/static/",        // 静态资源目录
+      "/assets/",        // 资源目录
+      "/images/",        // 图片目录
+      "/fonts/",         // 字体目录
+      "/public/",        // 公共资源目录
+      "/dist/",          // 编译输出目录
+      "/build/"          // 构建输出目录
+    ],
+    "excludeContentTypes": [
+      "image/",          // 所有图片类型
+      "font/",           // 所有字体类型
+      "text/css",        // CSS
+      "text/javascript", // JavaScript
+      "application/javascript",
+      "application/x-javascript",
+      "application/pdf",
+      "audio/",          // 音频文件
+      "video/"           // 视频文件
+    ],
+    "includeOnly": {
+      "methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "PATCH"
+      ],
+      "contentTypes": [
+        "application/json",
+        "application/x-www-form-urlencoded",
+        "multipart/form-data",
+        "text/xml",
+        "application/xml"
+      ]
+    }
+  }
+}
+```
+
+### 1.3 请求记录结构
+```json
+{
+  "request": {
+    "id": "唯一标识",
+    "timestamp": "请求时间",
+    "method": "请求方法",
+    "url": "完整URL",
+    "baseUrl": "基础URL",
+    "headers": "请求头",
+    "parameters": {
+      "url": ["URL参数列表"],
+      "body": ["请求体参数列表"],
+      "header": ["请求头参数列表"]
+    }
+  }
+}
+```
+
+## 2. 参数分析规则
+
+### 2.1 参数类型识别
+```json
+{
+  "types": {
+    "numeric": {
+      "patterns": ["^\\d+$", "^-?\\d*\\.?\\d+$"],
+      "vulnerabilities": ["SQL_INJECTION", "COMMAND_INJECTION"]
+    },
+    "string": {
+      "patterns": [".*"],
+      "vulnerabilities": ["XSS", "SQL_INJECTION", "COMMAND_INJECTION", "PATH_TRAVERSAL"]
+    },
+    "email": {
+      "patterns": ["^[^@]+@[^@]+\\.[^@]+$"],
+      "vulnerabilities": ["SQL_INJECTION", "XSS"]
+    },
+    "path": {
+      "patterns": ["^/?([^/]+/)*[^/]*$"],
+      "vulnerabilities": ["PATH_TRAVERSAL", "LFI", "RFI"]
+    },
+    "json": {
+      "patterns": ["^\\{.*\\}$"],
+      "vulnerabilities": ["JSON_INJECTION", "XSS"]
+    }
+  }
+}
+```
+
+### 2.2 敏感参数识别
+```json
+{
+  "sensitive": {
+    "authentication": ["password", "token", "key", "secret", "auth"],
+    "personal": ["email", "phone", "ssn", "credit"],
+    "system": ["cmd", "exec", "query", "path", "file"],
+    "database": ["id", "table", "column", "select", "where"]
+  }
+}
+```
+
+## 3. 漏洞类型映射规则
+
+### 3.1 漏洞类型定义
+```json
+{
+  "vulnerabilityTypes": {
+    "SQL_INJECTION": {
+      "category": "注入类",
+      "severity": "高",
+      "payloadPath": "SQL Injection",
+      "indicators": [
+        "SQL syntax",
+        "mysql_error",
+        "ORA-",
+        "PostgreSQL"
+      ]
+    },
+    "XSS": {
+      "category": "客户端",
+      "severity": "中",
+      "payloadPath": "XSS Injection",
+      "indicators": [
+        "<script>",
+        "alert(",
+        "onerror=",
+        "javascript:"
+      ]
+    },
+    "PATH_TRAVERSAL": {
+      "category": "文件操作",
+      "severity": "高",
+      "payloadPath": "Directory Traversal",
+      "indicators": [
+        "file not found",
+        "directory not found",
+        "invalid path"
+      ]
+    }
+  }
+}
+```
+
+## 4. Fuzz 测试规则
+
+### 4.1 测试策略
+```json
+{
+  "strategy": {
+    "maxPayloadsPerType": 10,
+    "delayBetweenRequests": 1000,
+    "retryCount": 3,
+    "timeout": 5000,
+    "concurrency": 2
+  }
+}
+```
+
+### 4.2 响应分析规则
+```json
+{
+  "indicators": {
+    "error": {
+      "statusCodes": [500, 501, 502, 503, 504],
+      "patterns": [
+        "error",
+        "exception",
+        "stack trace",
+        "syntax error"
+      ]
+    },
+    "success": {
+      "statusCodes": [200, 201],
+      "patterns": [
+        "success",
+        "ok",
+        "created"
+      ]
+    },
+    "validation": {
+      "statusCodes": [400, 422],
+      "patterns": [
+        "invalid",
+        "validation failed",
+        "required"
+      ]
+    }
+  }
+}
+```
+
+## 5. 结果分析规则
+
+### 5.1 漏洞确认标准
+```json
+{
+  "confirmation": {
+    "required": {
+      "minPositiveResults": 2,
+      "minUniquePayloads": 2,
+      "maxFalsePositives": 1
+    },
+    "evidence": {
+      "responsePattern": true,
+      "errorMessage": true,
+      "statusCodeChange": true
+    }
+  }
+}
+```
+
+### 5.2 报告生成规则
+```json
+{
+  "report": {
+    "sections": {
+      "summary": {
+        "totalRequests": "测试请求总数",
+        "uniqueEndpoints": "唯一端点数",
+        "vulnerabilities": "发现的漏洞数",
+        "duration": "测试持续时间"
+      },
+      "details": {
+        "endpoint": "测试的端点",
+        "parameters": "测试的参数",
+        "vulnerabilities": "发现的漏洞",
+        "evidence": "漏洞证据",
+        "payload": "成功的 Payload",
+        "recommendation": "修复建议"
+      }
+    }
+  }
+}
+```
+
+## 6. 实现示例
+
+### 6.1 请求监听
+```javascript
+class RequestMonitor {
+  constructor(rules) {
+    this.rules = rules;
+    this.requests = new Map();
+  }
+
+  isUnique(request) {
+    const key = this.generateKey(request);
+    return !this.requests.has(key);
+  }
+
+  recordRequest(request) {
+    if (this.isUnique(request)) {
+      const key = this.generateKey(request);
+      this.requests.set(key, this.formatRequest(request));
+      return true;
+    }
+    return false;
+  }
+}
+```
+
+### 6.2 参数分析
+```javascript
+class ParameterAnalyzer {
+  constructor(rules) {
+    this.rules = rules;
+  }
+
+  analyzeParameter(name, value) {
+    const type = this.identifyType(value);
+    const sensitivity = this.checkSensitivity(name);
+    return {
+      type,
+      sensitivity,
+      potentialVulnerabilities: this.rules.types[type].vulnerabilities
+    };
+  }
+}
+```
+
+### 6.3 Fuzz 测试
+```javascript
+class FuzzTester {
+  constructor(rules) {
+    this.rules = rules;
+  }
+
+  async testParameter(parameter, vulnerabilityType) {
+    const payloads = await this.loadPayloads(vulnerabilityType);
+    const results = [];
+    
+    for (const payload of payloads.slice(0, this.rules.strategy.maxPayloadsPerType)) {
+      const result = await this.executeTest(parameter, payload);
+      results.push(result);
+      await this.delay(this.rules.strategy.delayBetweenRequests);
+    }
+    
+    return this.analyzeResults(results);
+  }
+}
+```
+
+## 7. 使用说明
+
+1. 启动监听器开始记录 API 请求
+2. 对每个唯一请求进行参数分析
+3. 根据参数类型选择潜在漏洞类型
+4. 从 PayloadsAllTheThings 加载对应 Payload
+5. 执行 Fuzz 测试并收集结果
+6. 分析结果确认漏洞
+7. 生成测试报告
+
+## 8. 注意事项
+
+1. 遵守测试目标的使用政策
+2. 控制测试频率避免影响服务
+3. 注意保护敏感数据
+4. 及时报告发现的漏洞
+5. 保持测试日志完整性
